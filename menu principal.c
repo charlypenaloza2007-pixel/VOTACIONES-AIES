@@ -609,4 +609,4 @@ int panelAdministrador(char admin[],char pasar[]){
    return 0; 
 }
 
-//fin
+//fin.
