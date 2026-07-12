@@ -194,7 +194,7 @@ main()
 
 ## Autor
 
-Carlos Luis Peñaloza Orellana
+Carlos Luis Peñaloza Orellana/
 Daniel Alejandro Urbina Arteaga
 
       
