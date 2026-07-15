@@ -13,9 +13,9 @@ typedef struct {
 
 typedef struct {
     char partido[50];
-    char presidente[50];
+    char candidato[50]; 
     char cedula[15];
-    char vicepresidente[50];
+    char vicecandidato[50];
     char campana[50];
 } Partido;
 
@@ -23,10 +23,23 @@ typedef struct {
 char periodo[10] = " ";
 Partido candidatosGlobales[5];
 
-// Construye la ruta absoluta para los archivos en el escritorio de carlo
+// Construye la ruta absoluta para los archivos
 void rutaArchivo(char ruta[], char nombre[], int numero)
 {
     sprintf(ruta, "C:\\Users\\carlo\\Desktop\\votaciones\\%s%d.txt", nombre, numero);
+}
+
+// Recupera el último periodo activo para evitar pérdida de progreso al reiniciar
+void restaurarPeriodoActivo() {
+    FILE *archivo = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\periodos.txt", "r");
+    if (archivo != NULL) {
+        char periodoGuardado[20];
+        int num;
+        while (fscanf(archivo, "%s %d", periodoGuardado, &num) == 2) {
+            strcpy(periodo, periodoGuardado);
+        }
+        fclose(archivo);
+    }
 }
 
 // Busca el siguiente índice disponible para no sobreescribir elecciones anteriores
@@ -41,7 +54,7 @@ int obtenerNuevoArchivo()
         sprintf(ruta, "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt", numero);
         archivo = fopen(ruta, "r");
         if(archivo == NULL)
-            return numero; // Retorna el número si el archivo no existe
+            return numero; 
         fclose(archivo);
         numero++;
     }
@@ -60,7 +73,7 @@ int contarElecciones()
         archivo = fopen(nombreArchivo, "r");
         if (archivo == NULL)
         {
-            break; // Detiene la búsqueda cuando ya no encuentra correlativos
+            break; 
         }
         fclose(archivo);
         contador++;
@@ -90,7 +103,7 @@ int comprobarPeriodo(char periodoInput[])
         }
     }
     fclose(archivo);
-    return 0; // Periodo libre para registro
+    return 0; 
 }
 
 // Módulo para la creación y configuración de un nuevo proceso electoral
@@ -102,7 +115,11 @@ int controlarPanel(){
   FILE *archivo;
   FILE *prueba;
   FILE *periodoArchivo;
+  
   int cant;
+  char periodoGuardado[20];
+int numeroArchivo;
+
   cant = contarElecciones();
 
   while(1)
@@ -114,13 +131,14 @@ int controlarPanel(){
     // Validación de longitud del código del periodo
     if(strlen(aut) != 6)
     {
-        printf("Error: Código de autentificación no válido\n");
-        return 0;
+        printf("Error: Código de autentificación '%s' no válido. Debe contener 6 caracteres.\n", aut);
+        printf("Ejemplo: 2026-A");
+        continue;
     }
     if(comprobarPeriodo(aut))
     {
-        printf("Error: El periodo %s ya existe. No se puede registrar nuevamente.\n", aut);
-        return 0;
+        printf("Error: El periodo '%s' ya se encuentra registrado. Intente con otro código.\n", aut);
+        continue;
     }
     sprintf(nombrar_Archivo, "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt", cant);
     prueba = fopen(nombrar_Archivo, "r");
@@ -129,25 +147,25 @@ int controlarPanel(){
       printf("\t\t/ / / / / Nueva elección / / / / /\n");
       while(cantidad <= 0 || cantidad > 5)
       {
-        printf("Ingrese cuántos candidatos quiere ingresar:");
+        printf("Ingrese cuántos partidos quiere ingresar:");
         scanf("%d", &cantidad);
-        getchar();
+        while(getchar() != '\n');
+        
         if(cantidad > 5)
         {
-            printf("No puede ingresar más de 5 candidatos.\n");
+            printf("Error: No puede ingresar %d candidatos, el límite es 5.\n", cantidad);
+        }
+        else if(cantidad <= 0)
+        {
+            printf("Error: Debe ingresar al menos un candidato para crear una elección.\n");
         }
         else
         {
-            if(cantidad <= 0)
-            {
-                printf("Debe ingresar al menos un candidato para crear una elección.\n");
-                return 0;
-            }
             k = cantidad;
             archivo = fopen(nombrar_Archivo, "w");
             if(archivo == NULL)
             {
-                printf("No se pudo crear el archivo de candidatos.\n");
+                printf("Error crítico: No se pudo crear el archivo %s.\n", nombrar_Archivo);
                 return 0;
             }
             
@@ -158,15 +176,15 @@ int controlarPanel(){
                 fgets(candidatos[i].partido, 50, stdin);
                 candidatos[i].partido[strcspn(candidatos[i].partido, "\n")] = '\0';
 
-                printf("Ingrese el nombre del presidente: ");
-                fgets(candidatos[i].presidente, 50, stdin);
-                candidatos[i].presidente[strcspn(candidatos[i].presidente, "\n")] = '\0';
+                printf("Ingrese el nombre del candidato: ");
+                fgets(candidatos[i].candidato, 50, stdin);
+                candidatos[i].candidato[strcspn(candidatos[i].candidato, "\n")] = '\0';
 
-                printf("Ingrese el nombre del vicepresidente: ");
-                fgets(candidatos[i].vicepresidente, 50, stdin);
-                candidatos[i].vicepresidente[strcspn(candidatos[i].vicepresidente, "\n")] = '\0';
+                printf("Ingrese el nombre del vice-candidato: ");
+                fgets(candidatos[i].vicecandidato, 50, stdin);
+                candidatos[i].vicecandidato[strcspn(candidatos[i].vicecandidato, "\n")] = '\0';
             }
-            
+            printf("Elecciones creeadas con exito...");
             // Estructuración visual en el archivo de texto de candidatos
             fprintf(archivo, "==========================================================\n");
             fprintf(archivo, "               ELECCIONES ESTUDIANTILES\n");
@@ -178,13 +196,13 @@ int controlarPanel(){
                 fprintf(archivo, "Partido Político : %s\n", candidatos[i].partido);
                 fprintf(archivo, "Número de Lista  : %d\n\n", i + 1);
                 fprintf(archivo, "----------------------------------------------------------\n");
-                fprintf(archivo, "CANDIDATO A PRESIDENTE\n");
+                fprintf(archivo, "CANDIDATO\n");
                 fprintf(archivo, "----------------------------------------------------------\n");
-                fprintf(archivo, "Nombre: %s\n", candidatos[i].presidente);
+                fprintf(archivo, "Nombre: %s\n", candidatos[i].candidato);
                 fprintf(archivo, "----------------------------------------------------------\n");
-                fprintf(archivo, "CANDIDATO A VICEPRESIDENTE\n");
+                fprintf(archivo, "VICE-CANDIDATO\n");
                 fprintf(archivo, "----------------------------------------------------------\n");
-                fprintf(archivo, "Nombre: %s\n\n", candidatos[i].vicepresidente);
+                fprintf(archivo, "Nombre: %s\n\n", candidatos[i].vicecandidato);
             }
             fclose(archivo);
 
@@ -192,13 +210,14 @@ int controlarPanel(){
             periodoArchivo = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\periodos.txt", "a");
             if(periodoArchivo == NULL)
             {
-                printf("No se pudo abrir el archivo de periodos.\n");
+                printf("Error: No se pudo guardar el periodo en periodos.txt.\n");
                 return 0;
             } 
             fprintf(periodoArchivo, "%s %d\n", aut, cant);
             fclose(periodoArchivo);
             strcpy(periodo, aut);
-            printf("Actualmente hay un total de %d elecciones creadas\n", cant + 1);
+            
+            printf("Éxito: Elección del periodo '%s' creada. Actualmente hay un total de %d elecciones creadas.\n", periodo, cant + 1);
             
             // Selección de continuidad de flujo
             int opcion;
@@ -213,26 +232,50 @@ int controlarPanel(){
                 return k;
             }
             else if(opcion == 2)
-            {
-                char nuevoPeriodo[10];
-                printf("Ingrese el periodo que desea utilizar: ");
-                fgets(nuevoPeriodo, 10, stdin);
-                nuevoPeriodo[strcspn(nuevoPeriodo, "\n")] = '\0';
-                if(comprobarPeriodo(nuevoPeriodo))
-                {
-                    strcpy(periodo, nuevoPeriodo);
-                    printf("Periodo cambiado correctamente a: %s\n", periodo);
-                    return k;
-                }
+{
+    FILE *Periodos;
+    char periodoGuardado[20];
+    int numeroArchivo;
+    char nuevoPeriodo[10];
+
+    Periodos = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\periodos.txt", "r");
+
+    if(Periodos == NULL)
+    {
+        printf("No existen periodos registrados.\n");
+        break;   // No uses return 0
+    }
+
+    printf("\n========================================\n");
+    printf("      PERIODOS DISPONIBLES\n");
+    printf("========================================\n");
+
+    while(fscanf(Periodos, "%s %d", periodoGuardado, &numeroArchivo) == 2)
+    {
+        printf("Periodo: %s\n", periodoGuardado);
+    }
+
+    fclose(Periodos);
+
+    printf("\nIngrese el periodo que desea utilizar: ");
+    fgets(nuevoPeriodo, sizeof(nuevoPeriodo), stdin);
+    nuevoPeriodo[strcspn(nuevoPeriodo, "\n")] = '\0';
+
+    if(comprobarPeriodo(nuevoPeriodo))
+    {
+        strcpy(periodo, nuevoPeriodo);
+        printf("Éxito: Periodo cambiado correctamente a '%s'.\n", periodo);
+        return k;
+    }
                 else
                 {
-                    printf("El periodo ingresado no existe.\n");
+                    printf("Error: El periodo ingresado '%s' no existe.\n", nuevoPeriodo);
                     return 0;
                 }
             }
             else
             {
-                printf("Opción inválida\n");
+                printf("Error: Opción inválida. Saliendo al menú.\n");
                 return 0;
             }
         }
@@ -253,7 +296,7 @@ int validarCedulaEcuatoriana(const char *cedula) {
         return 0;
     }
     if (strlen(cedula) != 10) {
-        printf("Error: La cédula debe tener exactamente 10 dígitos.\n");
+        printf("Error: La cédula debe tener exactamente 10 dígitos. Ingresó %llu dígitos.\n", strlen(cedula));
         return 0;
     }
     for (int i = 0; i < 10; i++) {
@@ -264,7 +307,7 @@ int validarCedulaEcuatoriana(const char *cedula) {
     }
     int provincia = (cedula[0] - '0') * 10 + (cedula[1] - '0');
     if ((provincia < 1 || provincia > 24) && provincia != 30) {
-        printf("Error: Código de provincia inválido (Debe ser entre 01-24 o 30).\n");
+        printf("Error: Código de provincia '%02d' inválido (Debe ser entre 01-24 o 30).\n", provincia);
         return 0;
     }
     return 1;
@@ -291,7 +334,7 @@ int yaVoto(const char *cedula, int numeroArchivo)
         }
     }
     fclose(archivo);
-    return 0; // No ha votó
+    return 0; 
 }
 
 // Obtiene el ID correlativo correspondiente a una cadena de texto de periodo
@@ -319,7 +362,7 @@ int obtenerArchivoPeriodo(char periodoInput[])
 int verificarPadron(const char *cedula, char *nombreOut, int *edadOut) {
     FILE *archivo = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\padron.txt", "r");
     if (archivo == NULL) {
-        printf("Error: No se encontró el archivo padron.txt.\n");
+        printf("Error: No se encontró el archivo base padron.txt.\n");
         return 0;
     }
     char linea[150];
@@ -327,7 +370,6 @@ int verificarPadron(const char *cedula, char *nombreOut, int *edadOut) {
     char nombrePadron[100];
     int edadPadron;
     
-    // Parseo de estructura separada por punto y coma (;)
     while (fgets(linea, sizeof(linea), archivo) != NULL) {
         if (sscanf(linea, "%49[^;];%99[^;];%d", cedulaPadron, nombrePadron, &edadPadron) == 3) {
             if (strcmp(cedulaPadron, cedula) == 0) {
@@ -339,7 +381,7 @@ int verificarPadron(const char *cedula, char *nombreOut, int *edadOut) {
         }
     }
     fclose(archivo);
-    return 0; // No consta en el padrón
+    return 0; 
 }
 
 int contarCandidatos(int numeroArchivo);
@@ -351,114 +393,180 @@ int panelEstudiantes(int j, int cantidad)
     char ruta[150];
     char cedula[50];
     char nombreEstudiante[100] = "";
-    int edad = 18; 
+    int edad = 18;
     char archivoCandidatos[150];
 
     int numeroArchivo = obtenerArchivoPeriodo(periodo);
+
     if(numeroArchivo == -1)
     {
-        printf("El periodo seleccionado no existe.\n");
+        printf("No existe una elección activa.\n");
         return 1;
     }
 
-    if (contarCandidatos(numeroArchivo) <= 0)
+    if(contarCandidatos(numeroArchivo) <= 0)
     {
         return 1;
     }
 
-    sprintf(archivoCandidatos, "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt", numeroArchivo);
-    FILE *archivo = fopen(archivoCandidatos, "r");
-    if (archivo == NULL)
-    {
-        printf("No se encontro el archivo de candidatos.\n");
-        return 1;
-    }
-
-    char Linea[100];
-    int total = 0;
 comp:
-    printf("\v\t\t//// Módulo de votación ///\n");
-    
-    do {
-        printf("Ingrese su número de cédula: ");
-        scanf("%49s", cedula);
-        printf("\n-----------------------------\n");
-        while(getchar() != '\n');
 
-        if(validarCedulaEcuatoriana(cedula) == 0)
+    sprintf(archivoCandidatos,
+    "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt",
+    numeroArchivo);
+
+    FILE *archivo = fopen(archivoCandidatos, "r");
+
+    if(archivo == NULL)
+    {
+        printf("No se encontró el archivo de candidatos.\n");
+        return 1;
+    }
+
+    printf("\n");
+    printf("=========================================================\n");
+    printf("           SISTEMA ELECTORAL ESTUDIANTIL\n");
+    printf("=========================================================\n");
+    printf("                 MODULO DE VOTACION\n");
+    printf("=========================================================\n\n");
+
+    do
+    {
+        printf("Ingrese su numero de cedula: ");
+        scanf("%49s", cedula);
+        while(getchar()!='\n');
+
+        printf("\n");
+
+        if(validarCedulaEcuatoriana(cedula)==0)
         {
             continue;
         }
 
-        if (verificarPadron(cedula, nombreEstudiante, &edad) == 0) {
-            printf("ACCESO DENEGADO: Usted no consta en el padrón electoral.\n");
-            fclose(archivo);
-            return 1;
+        if(verificarPadron(cedula,nombreEstudiante,&edad)==0)
+        {
+            printf("La cedula %s no consta en el padron electoral.\n\n",cedula);
+            continue;
         }
 
-        if (yaVoto(cedula, numeroArchivo)) {
-            printf("\nAviso: Usted ya registró su voto en esta elección.\n");
+        if(yaVoto(cedula,numeroArchivo))
+        {
+            printf("El usuario con cedula %s ya registro su voto.\n",cedula);
             fclose(archivo);
-            return 2; 
+            return 2;
         }
-        
-        printf("BIENVENIDO/A: %s\n", nombreEstudiante);
-        printf("EDAD REGISTRADA: %d años\n", edad);
-        printf("-----------------------------\n");
-        break; 
-        
-    } while (1);
 
-    // Muestra las listas de opciones electorales disponibles en pantalla
-    while (fgets(Linea, sizeof(Linea), archivo) != NULL)
+        printf("---------------------------------------------------------\n");
+        printf(" BIENVENIDO : %s\n",nombreEstudiante);
+        printf(" EDAD       : %d años\n",edad);
+        printf(" PERIODO    : %s\n",periodo);
+        printf("---------------------------------------------------------\n\n");
+
+        break;
+
+    }while(1);
+
+    char linea[100];
+    cantidad = 0;
+
+    printf("=============== LISTAS PARTICIPANTES ====================\n\n");
+
+    while(fgets(linea,sizeof(linea),archivo)!=NULL)
     {
-        total++;
-        printf("%s", Linea);
+        printf("%s",linea);
+
+        if(strncmp(linea,"Número de Lista",15)==0 ||
+           strncmp(linea,"Numero de Lista",15)==0)
+        {
+            cantidad++;
+        }
     }
+
     fclose(archivo);
 
-    if (total <= 0)
+    if(cantidad==0)
     {
-        printf("No hay candidatos registrados.\n");
+        printf("No existen candidatos registrados.\n");
         return 1;
     }
 
-    cantidad = total;
+    printf("\n=========================================================\n");
+    printf("                 OPCIONES DE VOTACION\n");
+    printf("=========================================================\n");
+    printf("Listas disponibles : 1 - %d\n",cantidad);
+    printf("Voto en blanco     : 0\n");
+    printf("Voto nulo          : -1\n");
+    printf("=========================================================\n");
 
-    printf("Si desea votar en blanco, ingrese 0.\n");
-    printf("Si desea votar en nulo, ingrese  -1.\n");
-    printf("Ingrese el numero del candidato que desea votar:\n");
-    
-    scanf("%d", &votacion);
-    while(getchar() != '\n'); 
+    int resultado;
+    int valido = 0;
 
-    if(votacion < -1 || votacion > cantidad) 
+    do
     {
-        printf("Voto inválido. Seleccione un candidato válido, 0 para voto blanco o -1 para voto nulo.\n");
-        goto comp;
-    } else {
-        // Almacenamiento transaccional individual del voto
-        sprintf(ruta, "C:\\Users\\carlo\\Desktop\\votaciones\\datos%d_%d.txt", numeroArchivo, j);
-        FILE *fp = fopen(ruta, "w");
-        if(fp == NULL)
-        {
-            printf("Error al crear el archivo.\n");
-            return 1;
-        }
-        fprintf(fp, "Edad: %d\nCédula: %s\nVoto: %d\n", edad, cedula, votacion);
-        printf("\nSu voto ha sido registrado.\n");
-        fclose(fp);
+        printf("Ingrese su voto: ");
 
-        // Agrega al votante a la lista negra interna del periodo
-        char rutaCedula[150];
-        sprintf(rutaCedula, "C:\\Users\\carlo\\Desktop\\votaciones\\cedulas%d.txt", numeroArchivo);
-        FILE *fc = fopen(rutaCedula, "a");
-        if(fc != NULL){
-            fprintf(fc, "%s\n", cedula);
-            fclose(fc);
+        resultado = scanf("%d",&votacion);
+
+        while(getchar()!='\n');
+
+        if(resultado!=1)
+        {
+            printf("\nError: Debe ingresar únicamente numeros enteros.\n\n");
+            continue;
         }
-        return 0;
+
+        if(votacion==-1 || votacion==0 || (votacion>=1 && votacion<=cantidad))
+        {
+            valido=1;
+        }
+        else
+        {
+            printf("\nError: Voto invalido.\n");
+            printf("Debe ingresar un numero entre 1 y %d.\n",cantidad);
+            printf("Tambien puede ingresar:\n");
+            printf("0  -> Voto en blanco\n");
+            printf("-1 -> Voto nulo\n\n");
+        }
+
+    }while(!valido);
+
+    sprintf(ruta,
+    "C:\\Users\\carlo\\Desktop\\votaciones\\datos%d_%d.txt",
+    numeroArchivo,j);
+
+    FILE *fp = fopen(ruta,"w");
+
+    if(fp==NULL)
+    {
+        printf("No se pudo registrar el voto.\n");
+        return 1;
     }
+
+    fprintf(fp,
+    "Edad: %d\nCédula: %s\nVoto: %d\n",
+    edad,cedula,votacion);
+
+    fclose(fp);
+
+    printf("\n=========================================================\n");
+    printf("        SU VOTO HA SIDO REGISTRADO CON EXITO\n");
+    printf("=========================================================\n");
+
+    char rutaCedula[150];
+
+    sprintf(rutaCedula,
+    "C:\\Users\\carlo\\Desktop\\votaciones\\cedulas%d.txt",
+    numeroArchivo);
+
+    FILE *fc = fopen(rutaCedula,"a");
+
+    if(fc!=NULL)
+    {
+        fprintf(fc,"%s\n",cedula);
+        fclose(fc);
+    }
+
+    return 0;
 }
 
 // Escanea y cuantifica de manera independiente las transacciones de archivos de votos individuales
@@ -511,73 +619,135 @@ void contarResultados(int numeroArchivo, int *cont, int *cont1, int *cont2, int 
 }
 
 // Aplica el ordenamiento por método de inserción directa para desplegar ganadores
-void resultadosFinales(int numeroArchivo, int cantidad, int *cont, int *cont1, int *cont2, int *cont3, int *cont4, int *blanco, int *nulo, int *a, float *total, Resultado acta[]){
-  Resultado res[5];
-  FILE *archivo;
-  char linea[100];
-  char ruta[150];
-  int x = 0;
-  *a = 0;
-  if (cantidad > 5) {
-    clearerr(archivo);
-    cantidad = 5;
-  }
-  sprintf(ruta, "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt", numeroArchivo);
-  archivo = fopen(ruta, "r");
-  if (archivo == NULL) {
-    printf("No existe el archivo de candidatos.\n");
-    return;
-  }
-  while (x < cantidad && fgets(linea, sizeof(linea), archivo) != NULL) {
-    char *p = strchr(linea, ':');
-    if (p != NULL) {
-      p++;
-      while (*p == ' ') {
-         p++;
-       }
-      p[strcspn(p, "\r\n")] = '\0';
-      strcpy(res[x].nombre, p);
-    } else {
-      strcpy(res[x].nombre, linea);
-    }
-    switch (x) {
-       case 0: res[x].votos = *cont; break;
-       case 1: res[x].votos = *cont1; break;
-       case 2: res[x].votos = *cont2; break;
-       case 3: res[x].votos = *cont3; break;
-       case 4: res[x].votos = *cont4; break;
-    }
-    x++;
-  }
-  fclose(archivo);
+void resultadosFinales(int numeroArchivo,int cantidad,int *cont,int *cont1,int *cont2,int *cont3,int *cont4,int *blanco,int *nulo,int *a,float *total,Resultado acta[])
+{
+    Resultado res[5];
 
-  // Ordenamiento por inserción directa (Menor a Mayor / Mayor a Menor)
-  for (int i = 1; i < x; i++) {
-    Resultado actual = res[i];
-    int j = i - 1;
-    while (j >= 0 && res[j].votos < actual.votos) {
-      res[j + 1] = res[j];
-      j--;
-    }
-    res[j + 1] = actual;
-  }
+    FILE *archivo;
+    char linea[100];
+    char ruta[150];
 
-  for (int i = 0; i < x; i++) {
-    printf("Candidato %d: %s -> %d votos\n", i + 1, res[i].nombre, res[i].votos);
-    *a = *a + res[i].votos;  
-    acta[i] = res[i];
-  }
+    int x=0;
+
+    *a=0;
+
+    if(cantidad>5)
+        cantidad=5;
+
+    sprintf(ruta,
+    "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt",numeroArchivo);
+
+    archivo=fopen(ruta,"r");
+
+    if(archivo==NULL)
+    {
+        printf("No existe el archivo de candidatos.\n");
+        return;
+    }
+
     
-  if((*a + *blanco + *nulo) > 0) {
-      *total = (float)res[0].votos / (*a + *blanco + *nulo);
-  } else {
-      *total = 0.0;
-  }
+    while(x<cantidad && fgets(linea,sizeof(linea),archivo)!=NULL)
+    {
+      if(strncmp(linea,"Nombre",6)==0)
+        {
+            char *p=strchr(linea,':');
 
-  printf("Votos en blanco: %d\n", *blanco);
-  printf("Votos nulos: %d\n", *nulo);
-  printf("El ganador es %s con %d votos\n", res[0].nombre, res[0].votos);
-  printf("El margen de votos es de %.2f %%\n", *total * 100);
+            if(p!=NULL)
+            {
+                p++;
+
+                while(*p==' ')
+                    p++;
+
+                p[strcspn(p,"\r\n")]='\0';
+
+                strcpy(res[x].nombre,p);
+
+                switch(x)
+                {
+                    case 0:
+                        res[x].votos=*cont;
+                        break;
+
+                    case 1:
+                        res[x].votos=*cont1;
+                        break;
+
+                    case 2:
+                        res[x].votos=*cont2;
+                        break;
+
+                    case 3:
+                        res[x].votos=*cont3;
+                        break;
+
+                    case 4:
+                        res[x].votos=*cont4;
+                        break;
+                }
+
+                x++;
+            }
+        }
+    }
+
+    fclose(archivo);
+
+    for(int i=1;i<x;i++)
+    {
+
+        Resultado actual=res[i];
+
+        int j=i-1;
+        while(j>=0 && res[j].votos<actual.votos)
+        {
+            res[j+1]=res[j];
+            j--;
+        }
+        res[j+1]=actual;
+
+    }
+
+
+    printf("\n===== RESULTADOS =====\n");
+
+    for(int i=0;i<x;i++)
+    {
+
+        printf("Candidato %d: %s -> %d votos\n",i+1,res[i].nombre,res[i].votos);
+
+        *a += res[i].votos;
+        acta[i]=res[i];
+
+    }
+
+
+
+    if((*a+*blanco+*nulo)>0)
+    {
+        *total=(float)res[0].votos/
+        (*a+*blanco+*nulo);
+    }
+    else
+    {
+        *total=0;
+    }
+
+
+
+    printf("\nVotos en blanco: %d\n",*blanco);
+
+    printf("Votos nulos: %d\n",*nulo);
+
+
+
+    if(x>0)
+    {
+        printf("El ganador es %s con %d votos\n",res[0].nombre,res[0].votos);
+    }
+
+
+    printf("Margen del ganador: %.2f %%\n",*total*100);
 }
 
 // Cuenta la cantidad de líneas dentro del archivo para calcular candidatos reales
@@ -599,70 +769,121 @@ int contarCandidatos(int numeroArchivo){
 }
 
 // Generación formal y formateada del acta final de escrutinio
-void generarActa(){
-  FILE *archivo;
-  char ruta[150];
-  int numeroArchivo = obtenerArchivoPeriodo(periodo);
-  if(numeroArchivo == -1)
+
+  void generarActa()
   {
-      printf("No existe un periodo seleccionado.\n");
-      return;
-  }
-  int cantidad = contarCandidatos(numeroArchivo);
-  int cont = 0, cont1 = 0, cont2 = 0, cont3 = 0, cont4 = 0, blanco = 0, nulo = 0;
-  int a = 0;
-  float total = 0;
-  Resultado acta[5];
-  
-  contarResultados(numeroArchivo, &cont, &cont1, &cont2, &cont3, &cont4, &blanco, &nulo);
-  resultadosFinales(numeroArchivo, cantidad, &cont, &cont1, &cont2, &cont3, &cont4, &blanco, &nulo, &a, &total, acta);
-  
-  sprintf(ruta, "C:\\Users\\carlo\\Desktop\\votaciones\\acta%d.txt", numeroArchivo);
-  archivo = fopen(ruta, "w");
-  if(archivo == NULL){
+    FILE *archivoCandidatos;
+    char ruta[150];
+
+    int numeroArchivo=obtenerArchivoPeriodo(periodo);
+
+    if(numeroArchivo==-1)
+    {
+        printf("No existe un periodo seleccionado.\n");
+        return;
+    }
+    int cantidad=0;
+
+    FILE *archivo;
+    char rutaCandidatos[150];
+    char linea[100];
+
+
+    sprintf(rutaCandidatos,
+    "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt",
+    numeroArchivo);
+
+
+    archivoCandidatos=fopen(rutaCandidatos,"r");
+
+
+    if(archivoCandidatos==NULL)
+    {
+        printf("No se encontro el archivo de candidatos.\n");
+        return;
+    }
+
+
+    while(fgets(linea,sizeof(linea),archivoCandidatos)!=NULL)
+    {
+        if(strncmp(linea,"Partido Político :",17)==0)
+        {
+            cantidad++;
+        }
+    }
+
+
+    fclose(archivoCandidatos);
+
+    int cont=0,cont1=0,cont2=0,cont3=0,cont4=0;
+    int blanco=0,nulo=0;
+
+    int a=0;
+    float total=0;
+
+    Resultado acta[5];
+
+    contarResultados(numeroArchivo,&cont,&cont1,&cont2,&cont3,&cont4,&blanco,&nulo);
+    resultadosFinales(numeroArchivo,cantidad,&cont,&cont1,&cont2,&cont3,&cont4,&blanco,&nulo,&a,&total,acta);
+    sprintf(ruta,"C:\\Users\\carlo\\Desktop\\votaciones\\acta%d.txt",numeroArchivo);
+
+    archivo=fopen(ruta,"w");
+
+    if(archivo==NULL)
+    {
         printf("No se pudo generar el acta.\n");
         return;
-  }
-  
-  fprintf(archivo, "\v\t\t==============ACTA DE RESULTADOS================\n");
-  printf("\v\t\t==============ACTA DE RESULTADOS================\n");
-  
-  fprintf(archivo, "+------------------------------------------------+\n");
-  fprintf(archivo, "|           CUADRO OFICIAL DE RESULTADOS         |\n");
-  fprintf(archivo, "+------------------------------------------------+\n");
-  
-  printf("+------------------------------------------------+\n");
-  printf("|           CUADRO OFICIAL DE RESULTADOS         |\n");
-  printf("+------------------------------------------------+\n");
-  
-  for(int i = 0; i < cantidad; i++) {
-      fprintf(archivo, "| LISTA #%-39d |\n", i + 1);
-      fprintf(archivo, "| DATOS: %-39s |\n", acta[i].nombre);
-      fprintf(archivo, "| Votos Totales: %-31d |\n", acta[i].votos);
-      fprintf(archivo, "+------------------------------------------------+\n");
-      
-      printf("| LISTA #%-39d |\n", i + 1);
-      printf("| DATOS: %-39s |\n", acta[i].nombre);
-      printf("| Votos Totales: %-31d |\n", acta[i].votos);
-      printf("+------------------------------------------------+\n");
-  }
-  
-  printf("Votos en blanco: %d\n", blanco);
-  printf("Votos nulos: %d\n", nulo);
-  printf("---------------------------------\n");
-  printf("El ganador es: %s con %d votos\n", acta[0].nombre, acta[0].votos);
-  printf("El total de votos es: %d\n", a + blanco + nulo);
-  printf("El margen de votos total es %.2f %%\n", total * 100);
-  
-  fprintf(archivo, "Votos en blanco: %d\n", blanco);
-  fprintf(archivo, "Votos nulos: %d\n", nulo);
-  fprintf(archivo, "---------------------------------\n");
-  fprintf(archivo, "El ganador es: %s con %d votos\n", acta[0].nombre, acta[0].votos);
-  fprintf(archivo, "El total de votos es: %d\n", a + blanco + nulo);
-  fprintf(archivo, "El margen de votos total es %.2f %%\n", total * 100);
-  
-  fclose(archivo);
-  printf("\nActa generada correctamente: acta%d.txt\n", numeroArchivo);
+    }
+
+    fprintf(archivo,"============================================================\n");
+    fprintf(archivo,"              ACTA OFICIAL DE RESULTADOS ELECTORALES\n");
+    fprintf(archivo,"============================================================\n\n");
+    fprintf(archivo,"INSTITUCION: ELECCIONES ESTUDIANTILES\n");
+
+    fprintf(archivo,"PERIODO ELECTORAL: %s\n",
+    periodo);
+    fprintf(archivo,"CODIGO DE ELECCION: %d\n\n",numeroArchivo);
+
+    fprintf(archivo,"------------------------------------------------------------\n");
+    fprintf(archivo, "                     RESULTADOS\n");
+    fprintf(archivo,"------------------------------------------------------------\n\n");
+
+
+    fprintf(archivo,"%-5s %-35s %-10s\n","N°","CANDIDATO","VOTOS");
+
+    fprintf(archivo,"------------------------------------------------------------\n");
+
+    for(int i=0;i<cantidad;i++)
+    {
+        fprintf(archivo,"%-5d %-35s %-10d\n",i+1, acta[i].nombre,acta[i].votos);
+    }
+    fprintf(archivo,"\n------------------------------------------------------------\n");
+    fprintf(archivo,"RESUMEN DE VOTACION\n");
+    fprintf(archivo,"------------------------------------------------------------\n\n");
+
+    fprintf(archivo,"Votos validos : %d\n",a);
+    fprintf(archivo,"Votos blancos : %d\n",blanco);
+
+    fprintf(archivo,"Votos nulos   : %d\n\n",nulo);
+    fprintf(archivo,"TOTAL DE VOTOS EMITIDOS: %d\n", a+blanco+nulo);
+    fprintf(archivo,"PORCENTAJE DEL GANADOR: %.2f %%\n\n",total*100);
+    fprintf(archivo,"------------------------------------------------------------\n");
+    fprintf(archivo,"GANADOR DE LA ELECCION\n");
+    fprintf(archivo,"------------------------------------------------------------\n\n");
+    fprintf(archivo,"Candidato ganador: %s\n",acta[0].nombre);
+    fprintf(archivo,"Cantidad de votos: %d\n\n",acta[0].votos);
+    fprintf(archivo,"============================================================\n");
+    fprintf(archivo,"                  VALIDACION DEL ACTA\n");
+    fprintf(archivo,"============================================================\n\n");
+    fprintf(archivo,"Periodo verificado: %s\n",periodo);
+    fprintf(archivo,"Archivo electoral: candidatos%d.txt\n",numeroArchivo);
+    fprintf(archivo,"Estado: ACTA GENERADA CORRECTAMENTE\n\n");
+
+    fprintf(archivo,"\n============================================================\n");
+
+    fclose(archivo);
+
+    printf("\nActa generada correctamente: acta%d.txt\n",numeroArchivo);
 }
 
 // Verifica la consistencia lógica de los archivos del periodo electoral activo
@@ -676,7 +897,7 @@ int controlArchivos()
     archivo = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\periodos.txt", "r");
     if(archivo == NULL)
     {
-        printf("No existen elecciones registradas.\n");
+        printf("Aviso: No existen elecciones registradas en el sistema.\n");
         return 0;
     }
     while(fscanf(archivo, "%s %d", periodoGuardado, &numeroArchivo) == 2)
@@ -695,7 +916,7 @@ int controlArchivos()
     return 1;
 }
 
-// Búsqueda binaria iterativa y recursiva para encontrar cédulas rápidamente
+// Búsqueda binaria iterativa y recursiva para encontrar cédulas
 int busquedaBinariaRecursiva(char arr[][50], int inicio, int fin, const char *objetivo) {
     if (inicio > fin) {
         return -1; 
@@ -718,7 +939,7 @@ void administrarUsuarios() {
     int numeroArchivo = obtenerArchivoPeriodo(periodo);
     if(numeroArchivo == -1)
     {
-        printf("No existe un periodo seleccionado.\n");
+        printf("Error: No existe un periodo seleccionado para administrar.\n");
         return;
     }
     char ruta[150];
@@ -730,6 +951,7 @@ void administrarUsuarios() {
         printf("Ingrese su opción: ");
         scanf("%d", &opcion_admin);
         while(getchar() != '\n');
+        
         if (opcion_admin == 1) {
             FILE *archivo = fopen(ruta, "r");
             if (!archivo) {
@@ -765,7 +987,6 @@ void administrarUsuarios() {
                 continue;
             }
             
-            // Método de ordenamiento Burbuja previo a realizar la búsqueda binaria
             char temporal[50];
             for (int i = 0; i < n - 1; i++) {
                 for (int j = 0; j < n - i - 1; j++) {
@@ -800,7 +1021,7 @@ void administrarUsuarios() {
             }
         }
         else if (opcion_admin != 3) {
-            printf("\nOpción no válida. Intente de nuevo.\n");
+            printf("\nError: Opción no válida. Intente de nuevo.\n");
         }
     } while (opcion_admin != 3);
 }
@@ -831,14 +1052,14 @@ void integridadArchivos(int *suma)
     *suma = 0;
     if(numeroArchivo == -1)
     {
-        printf("No existe un periodo seleccionado.\n");
+        printf("Error: No existe un periodo seleccionado.\n");
         return;
     }
     sprintf(ruta, "C:\\Users\\carlo\\Desktop\\votaciones\\candidatos%d.txt", numeroArchivo);
     archivo = fopen(ruta, "r");
     if(archivo == NULL)
     {
-        printf("No se encontro el archivo.\n");
+        printf("Error: No se encontró el archivo de candidatos.\n");
         return;
     }
     while((linea = fgetc(archivo)) != EOF) {
@@ -855,8 +1076,8 @@ void verificarIntegridad()
     char nombre[50];
     char rutaIntegridad[150];
     char rutaAuditoria[150];
-    int integr1;
-    int integr2;
+    int integr1 = 0;
+    int integr2 = 0;
     time_t tiempo;
     struct tm *fechaHora;
     char fecha[50];
@@ -865,7 +1086,7 @@ void verificarIntegridad()
     int numeroArchivo = obtenerArchivoPeriodo(periodo);
     if(numeroArchivo == -1)
     {
-        printf("No existe un periodo seleccionado.\n");
+        printf("Error: No existe un periodo seleccionado.\n");
         return;
     }
 
@@ -884,12 +1105,12 @@ void verificarIntegridad()
 
         if(integridad == NULL)
         {
-            printf("No se pudo crear archivo de integridad.\n");
+            printf("Error crítico: No se pudo crear el archivo de integridad.\n");
             return;
         }
         fprintf(integridad, "%d\n%s", integr1, aud);
         fclose(integridad);
-        printf("Archivo de integridad creado.\n");
+        printf("Éxito: Archivo de integridad creado.\n");
         return;
     }
 
@@ -901,7 +1122,7 @@ void verificarIntegridad()
     integridadArchivos(&integr2);
     archivo = fopen(rutaAuditoria, "w");
     if(archivo == NULL){
-        printf("No se pudo crear auditoria.\n");
+        printf("Error crítico: No se pudo crear el archivo de auditoria.\n");
         return;
     }
     fprintf(archivo, "--- AUDITORIA DE CANDIDATOS ---\n");
@@ -917,12 +1138,12 @@ void verificarIntegridad()
     printf("Integridad actual: %d\n", integr2);
     
     if(integr1 == integr2){
-        fprintf(archivo, "Estado: Archivo de candidatos integro.\n");
-        printf("Estado: Archivo de candidatos integro.\n");
+        fprintf(archivo, "Estado: Archivo de candidatos íntegro.\n");
+        printf("Estado: Archivo de candidatos íntegro.\n");
     }
     else {
-        fprintf(archivo, "Estado: ALERTA. Archivo modificado.\n");
-        printf("Estado: ALERTA. Archivo modificado.\n");
+        fprintf(archivo, "Estado: ALERTA. Archivo modificado externamente.\n");
+        printf("Estado: ALERTA. Archivo modificado externamente.\n");
     }
     tiempo = time(NULL);
     fechaHora = localtime(&tiempo);
@@ -933,7 +1154,7 @@ void verificarIntegridad()
     fclose(archivo);
 }
 
-// Menú y enrutamiento interno de privilegios para Administrador y Supervisor
+// Menú y enrutamiento interno de privilegios
 int panelAdministrador(char admin[], char pasar[]){
   char nombre[] = "Administrador1";
   char contr[] = "123456";
@@ -948,7 +1169,8 @@ int panelAdministrador(char admin[], char pasar[]){
   int nulo = 0;
   int numeroArchivo = obtenerArchivoPeriodo(periodo);
   int dif = 0;
-
+  int var1;
+  int resultado = 0;
   if(numeroArchivo != -1)
   {
       dif = contarCandidatos(numeroArchivo);
@@ -966,37 +1188,119 @@ int panelAdministrador(char admin[], char pasar[]){
           printf("\n\t\t6.-Salir al menú principal");
           printf("\n\nIngrese su opción:");
           scanf("%d", &op);
-          getchar();
+          while(getchar() != '\n'); 
+          
           switch(op)
           {
             case 1:
               comp = controlArchivos();
-              if(comp == 1)
-              {
-                 printf("Ya existe una elección activa, no se puede crear una nueva\n");
-                 printf("Quiere crear una nueva eleccion si (s), no(n)?\n");
-                 printf("Ingrese su eleccion s o n: ");
-                 scanf(" %c", &elec);
-                 if(elec == 's' || elec == 'S')
-                 {
-                   while(getchar() != '\n');
-                   controlarPanel();
-                 }
-              } else {
-                controlarPanel();
-              }
+if (comp == 1) {
+    printf("Aviso: Ya existe una eleccion activa, no se puede crear una nueva\n");
+    
+    char elec;
+    int entrada_valida = 0;
+
+    do {
+        printf("¿Quiere crear una nueva eleccion si (s), no(n)?\n");
+        printf("Ingrese su eleccion s o n: ");
+        
+        // Leemos el caracter (el espacio antes de %c ayuda a ignorar espacios/saltos previos)
+        int resultado_scanf = scanf(" %c", &elec);
+        
+        // Limpiamos el búfer inmediatamente después del scanf
+        while (getchar() != '\n');
+
+        if (resultado_scanf == 1) {
+            // Comprobamos si es una de las opciones válidas
+            if (elec == 's' || elec == 'S' || elec == 'n' || elec == 'N') {
+                entrada_valida = 1; // Entrada correcta, salimos del ciclo
+            } else {
+                printf("\n[Error] El caracter '%c' no es valido. Solo se permite 's' o 'n'.\n\n", elec);
+            }
+        } else {
+            printf("\n[Error] Entrada no valida. Intente de nuevo.\n\n");
+        }
+
+    } while (!entrada_valida);
+
+    // Evaluamos la opción seleccionada por el usuario
+    if (elec == 's' || elec == 'S') {
+        controlarPanel();
+    } else if (elec == 'n' || elec == 'N') {
+        printf("Accion cancelada. No se creara una nueva eleccion.\n");
+    }
+
+} else {
+    controlarPanel();
+}
               break;
             case 2:
-              generarActa();
-              break;
+             {
+    FILE *archivo;
+    char periodoGuardado[20];
+    int numeroArchivo;
+    char periodoIngresado[10];
+
+    archivo = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\periodos.txt", "r");
+
+    if (archivo == NULL)
+    {
+        printf("No existen periodos registrados.\n");
+        break;
+    }
+
+    printf("\n===== PERIODOS DISPONIBLES =====\n");
+
+    while (fscanf(archivo, "%s %d", periodoGuardado, &numeroArchivo) == 2)
+    {
+        printf("Periodo: %s\n", periodoGuardado);
+    }
+
+    fclose(archivo);
+
+    printf("\nIngrese el periodo del cual desea generar el acta: ");
+    fgets(periodoIngresado, sizeof(periodoIngresado), stdin);
+    periodoIngresado[strcspn(periodoIngresado, "\n")] = '\0';
+
+    if (comprobarPeriodo(periodoIngresado))
+    {
+        strcpy(periodo, periodoIngresado);
+        generarActa();
+    }
+    else
+    {
+        printf("Error: El periodo '%s' no existe.\n", periodoIngresado);
+    }
+
+    break;
+}
+
             case 3:
-              printf("¿Desea realizar auditoria del archivo de los candidatos(1)o los votos(2)?");
-              printf("\nIngrese 1 o 2: ");
-              scanf("%d", &var);
-              getchar();
-              if(var == 1) {
-                verificarIntegridad();
-              }
+            
+              do {
+    printf("¿Desea realizar la auditoria del archivo de registros de campaña?\n");
+    printf("1. Si\n");
+    printf("0. No\n");
+    printf("Ingrese una opcion: ");
+
+    resultado = scanf("%d", &var1);
+
+    while (getchar() != '\n');
+
+    if (resultado != 1) {
+        printf("\n[Error] Debe ingresar solo numeros.\n\n");
+    } else if (var1 != 0 && var1 != 1) {
+        printf("\n[Error] Solo se permite ingresar 0 o 1.\n\n");
+    }
+
+} while (resultado != 1 || (var1 != 0 && var1 != 1));
+
+if (var1 == 1) {
+    verificarIntegridad();
+} else {
+    printf("Auditoria omitida. Continuando con el programa...\n");
+}
+        
               break;
             case 4:
               administrarUsuarios();
@@ -1012,7 +1316,7 @@ int panelAdministrador(char admin[], char pasar[]){
             case 6:
               break;
             default:
-              printf("Opción no válida\n");
+              printf("Error: Opción %d no válida\n", op);
               break;
           }
       } while(op != 6);
@@ -1027,6 +1331,8 @@ int panelAdministrador(char admin[], char pasar[]){
           printf("\n\t\t3.-Salir al menú principal");
           printf("\n\nIngrese su opción:");
           scanf("%d", &op);
+          while(getchar() != '\n'); 
+          
           switch(op)
           {
             case 1:
@@ -1038,27 +1344,26 @@ int panelAdministrador(char admin[], char pasar[]){
             case 3:
               break;
             default:
-              printf("Opción no válida\n");
+              printf("Error: Opción %d no válida\n", op);
               break;
           }
       } while(op != 3);
       return 0;
       
   } else if(strcmp(admin, nombre) != 0 && strcmp(admin, supNombre) != 0 && strcmp(pasar, contr) != 0){
-    printf("\nNombre y contraseña incorrectos\n");
+    printf("\nError: Nombre y contraseña incorrectos\n");
     return 0;
   } else if(strcmp(admin, nombre) != 0 && strcmp(admin, supNombre) != 0) {
-    printf("\nNombre incorrecto\n");
+    printf("\nError: Nombre de usuario incorrecto\n");
     return 0;
   } else {
-    printf("\nContraseña incorrecta\n");
+    printf("\nError: Contraseña incorrecta\n");
     return 0;
   } 
 }
 
-// Crea la carpeta contenedora si no existe e inicializa el padrón electoral base
+// Crea la carpeta contenedora e inicializa el padrón electoral en su ruta original
 void inicializarPadronAutomatico() {
-    // Asegura dinámicamente que la ruta del directorio exista para prevenir errores de puntero nulo
     CreateDirectory("C:\\Users\\carlo\\Desktop\\votaciones", NULL);
     
     FILE *archivo = fopen("C:\\Users\\carlo\\Desktop\\votaciones\\padron.txt", "r");
@@ -1083,15 +1388,14 @@ void inicializarPadronAutomatico() {
 }
 
 int main(void){
-  // Establece codificación UTF-8 para evitar caracteres extraños en la consola de Windows
   SetConsoleOutputCP(65001);
    char pasar[20];
    char admin[20];
    char c;
    int i = 0, ver, dif = 0;
    
-   // Ejecución inmediata obligatoria para la persistencia del padrón electoral
    inicializarPadronAutomatico();
+   restaurarPeriodoActivo(); // Función clave añadida para solucionar la pérdida de memoria en reinicios
 
    int numeroArchivo = obtenerArchivoPeriodo(periodo);
    int j = contarVotosExistentes(numeroArchivo); 
@@ -1101,20 +1405,21 @@ int main(void){
    printf("\n\v\t------------------Programa de elecciones---------------\n");
    printf("Ingrese su solicitud\n");
    printf("\v\t\t1.- Módulo de estudiantes\n");
-   printf("\t\t2.- Módulo de administrador\n");
+   printf("\t\t2.- Gestión\n");
    printf("\t\t3.- Salir\n\n");
    printf("Escoja su opcion: ");
    scanf("%d", &opcion);
    while(getchar() != '\n');
+   
    switch (opcion){ 
    case 2:
+     printf("Ingrese: (Administrador1) o (Supervisor1) dependiendo del rol que le sea asignado\n");
      printf("Ingrese su nombre de usuario: ");
      fgets(admin, 20, stdin);
      admin[strcspn(admin, "\n")] = '\0';
      printf("Ingrese su contraseña: ");
      i = 0;
      
-     // Enmascaramiento de caracteres por asteriscos (*) en consola
      while((c = getch()) != 13)  {
         pasar[i] = c;
         i++;
@@ -1134,19 +1439,19 @@ int main(void){
      j = contarVotosExistentes(numeroArchivo);
      ver = panelEstudiantes(j, dif);
      if(ver == 0){
-       j++; // Incrementa el contador transaccional de votos concurrentes
+       j++; 
      }
      else if(ver == 1){
-       printf("No existe una elección activa, reinicie el programa en el módulo de administrador\n");
+       printf("Error: No existe una elección activa, reinicie el programa en Gestión.\n");
      }
      break;
    case 3:
      printf("--------------------\n");
-     printf("Programa finalizado");
+     printf("Programa finalizado con éxito.\n");
      return 1;
      break;
    default:
-     printf("Opcion no valida\n");
+     printf("Error: Opcion %d no valida\n", opcion);
      break;
    } 
   }
